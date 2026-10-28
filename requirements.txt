@@ -1,0 +1,10 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+streamlit
+folium
+streamlit-folium
+pandas
+tzdata
+openpyxl
+pillow
+transformers
+torch
