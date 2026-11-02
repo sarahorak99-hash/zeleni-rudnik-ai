@@ -86,6 +86,8 @@ TEXT = {
         "category": "Kategorija",
         "where": "Gdje zbrinuti",
         "remark": "Napomena",
+        "often_wrong": "Ovo ljudi često bacaju na krivo mjesto.",
+        "typical_mistake": "Tipična greška",
         "sensitive": "Ovo ne možemo pouzdano prepoznati sa slike jer ovisi o sadržaju.",
         "confirm": "Potvrđujem da je to točno ono što je u ambalaži",
         "no_pos": "Za najbliže dvorište označi svoju lokaciju na stranici Karta dvorišta.",
@@ -137,6 +139,8 @@ TEXT = {
         "category": "Category",
         "where": "Where to dispose",
         "remark": "Note",
+        "often_wrong": "People often throw this away in the wrong place.",
+        "typical_mistake": "Typical mistake (in Croatian)",
         "sensitive": "We cannot reliably tell this from a photo because it depends on the contents.",
         "confirm": "I confirm this is exactly what is in the packaging",
         "no_pos": "To find the nearest yard, mark your location on the Yard map page.",
@@ -232,6 +236,9 @@ def load_items():
                     "kategorija": str(row[3] or ""),
                     "gdje": str(row[5] or ""),
                     "napomena": str(row[8] or ""),
+                    # stupci M i N (Često se krivo baca / Najčešća greška); stara tablica ih nema
+                    "krivo": len(row) > 13 and str(row[12] or "").strip().lower() == "da",
+                    "greska": str(row[13] or "") if len(row) > 13 else "",
                 }
             )
     return items
@@ -417,6 +424,12 @@ def page_scan(t, lang, yards):
     st.markdown(f"**{t['where']}:** {item['gdje']}")
     if item["napomena"]:
         st.markdown(f"**{t['remark']}:** {item['napomena']}")
+
+    if item["krivo"]:
+        text = f"**{t['often_wrong']}**"
+        if item["greska"]:
+            text += f"  \n{t['typical_mistake']}: {item['greska']}"
+        st.warning(text, icon="⚠️")
 
     if is_content_dependent(item["hr"]):
         st.warning(t["sensitive"])
