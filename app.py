@@ -75,6 +75,8 @@ TEXT = {
         "note": "Napomena: praznici nisu uračunati, a raspored mobilnih dvorišta provjeri na cistoca.hr.",
         "containers_btn": "Spremnici u tvom kvartu (Grad Zagreb)",
         "show_ug": "Prikaži podzemne spremnike (središnji Zagreb)",
+        "show_gc": "Prikaži granice gradskih četvrti",
+        "gc_name": "Gradska četvrt",
         "ug_name": "Podzemni spremnik",
         "ug_note": "Podzemni spremnici namijenjeni su stanarima kojima su dodijeljeni. Prikazani su samo spremnici iz otvorenog skupa Grada Zagreba (nepotpun popis).",
         "containers_help": "Zelene otoke i polupodzemne spremnike prikazuje karta Grada Zagreba.",
@@ -133,6 +135,8 @@ TEXT = {
         "note": "Note: public holidays are not included; check the mobile yard schedule at cistoca.hr.",
         "containers_btn": "Containers in your neighbourhood (City of Zagreb)",
         "show_ug": "Show underground containers (central Zagreb)",
+        "show_gc": "Show city district boundaries",
+        "gc_name": "City district",
         "ug_name": "Underground container",
         "ug_note": "Underground containers are meant for residents they are assigned to. Only containers from the City of Zagreb open dataset are shown (incomplete list).",
         "containers_help": "Green islands and semi-underground containers are shown on the City of Zagreb map.",
@@ -300,6 +304,7 @@ def page_map(t, yards, now):
     )
     only_open = st.sidebar.checkbox(t["open_now"])
     show_ug = st.sidebar.checkbox(t["show_ug"])
+    show_gc = st.sidebar.checkbox(t["show_gc"])
     extras = st.sidebar.multiselect(
         t["extra"],
         options=list(t["extra_opts"].keys()),
@@ -330,6 +335,23 @@ def page_map(t, yards, now):
                 prefix="fa",
             ),
         ).add_to(fmap)
+
+    if show_gc:
+        gc_path = Path(__file__).parent / "gradske_cetvrti.geojson"
+        if gc_path.exists():
+            folium.GeoJson(
+                gc_path.read_text(encoding="utf-8"),
+                style_function=lambda f: {
+                    "color": "#2e7d32",
+                    "weight": 2,
+                    "fillColor": "#a5d6a7",
+                    "fillOpacity": 0.15,
+                },
+                highlight_function=lambda f: {"fillOpacity": 0.35},
+                tooltip=folium.GeoJsonTooltip(
+                    fields=["JMS_IME"], aliases=[t["gc_name"] + ":"]
+                ),
+            ).add_to(fmap)
 
     if show_ug:
         ug = load_underground()
