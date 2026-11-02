@@ -71,6 +71,8 @@ TEXT = {
         "none": "Nijedno dvorište ne odgovara filterima.",
         "you": "Tvoja lokacija",
         "note": "Napomena: praznici nisu uračunati, a raspored mobilnih dvorišta provjeri na cistoca.hr.",
+        "containers_btn": "Spremnici u tvom kvartu (Grad Zagreb)",
+        "containers_help": "Zelene otoke i polupodzemne spremnike prikazuje karta Grada Zagreba.",
         "scan_title": "Prepoznaj otpad",
         "scan_intro": "Slikaj predmet koji želiš baciti, a mi ćemo ti reći kamo s njim.",
         "src_cam": "Snimi kamerom",
@@ -124,6 +126,8 @@ TEXT = {
         "none": "No yard matches the filters.",
         "you": "Your location",
         "note": "Note: public holidays are not included; check the mobile yard schedule at cistoca.hr.",
+        "containers_btn": "Containers in your neighbourhood (City of Zagreb)",
+        "containers_help": "Green islands and semi-underground containers are shown on the City of Zagreb map.",
         "scan_title": "Identify waste",
         "scan_intro": "Take a photo of the item you want to throw away and we will tell you where it goes.",
         "src_cam": "Use camera",
@@ -339,6 +343,9 @@ def page_map(t, yards, now):
         c3.markdown(f"**{t['hours']}:** {hours_text(best)}  \n**{t['phone']}:** {best['telefon']}")
         st.link_button(t["route"], route_url(lat0, lon0, best["lat"], best["lon"]))
 
+    st.divider()
+    st.caption(t["containers_help"])
+    st.link_button(t["containers_btn"], "https://spremnici.zagreb.hr/")
     st.caption(t["note"])
 
 
