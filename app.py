@@ -15,6 +15,8 @@ from datetime import datetime
 from math import asin, cos, radians, sin, sqrt
 from zoneinfo import ZoneInfo
 
+from pathlib import Path
+
 import folium
 import pandas as pd
 import streamlit as st
@@ -72,6 +74,9 @@ TEXT = {
         "you": "Tvoja lokacija",
         "note": "Napomena: praznici nisu uračunati, a raspored mobilnih dvorišta provjeri na cistoca.hr.",
         "containers_btn": "Spremnici u tvom kvartu (Grad Zagreb)",
+        "show_ug": "Prikaži podzemne spremnike (središnji Zagreb)",
+        "ug_name": "Podzemni spremnik",
+        "ug_note": "Podzemni spremnici namijenjeni su stanarima kojima su dodijeljeni. Prikazani su samo spremnici iz otvorenog skupa Grada Zagreba (nepotpun popis).",
         "containers_help": "Zelene otoke i polupodzemne spremnike prikazuje karta Grada Zagreba.",
         "scan_title": "Prepoznaj otpad",
         "scan_intro": "Slikaj predmet koji želiš baciti, a mi ćemo ti reći kamo s njim.",
@@ -127,6 +132,9 @@ TEXT = {
         "you": "Your location",
         "note": "Note: public holidays are not included; check the mobile yard schedule at cistoca.hr.",
         "containers_btn": "Containers in your neighbourhood (City of Zagreb)",
+        "show_ug": "Show underground containers (central Zagreb)",
+        "ug_name": "Underground container",
+        "ug_note": "Underground containers are meant for residents they are assigned to. Only containers from the City of Zagreb open dataset are shown (incomplete list).",
         "containers_help": "Green islands and semi-underground containers are shown on the City of Zagreb map.",
         "scan_title": "Identify waste",
         "scan_intro": "Take a photo of the item you want to throw away and we will tell you where it goes.",
@@ -224,6 +232,14 @@ def goes_to_yard(where_hr: str) -> bool:
 
 
 @st.cache_data
+@st.cache_data
+def load_underground():
+    path = Path(__file__).parent / "podzemni_spremnici.csv"
+    if not path.exists():
+        return pd.DataFrame()
+    return pd.read_csv(path)
+
+
 def load_items():
     """Predmeti iz tablice: HR (B), EN (C), kategorija HR (D), gdje HR (F), napomena (I)."""
     from openpyxl import load_workbook
@@ -283,6 +299,7 @@ def page_map(t, yards, now):
         format_func=lambda k: t["type_opts"][k],
     )
     only_open = st.sidebar.checkbox(t["open_now"])
+    show_ug = st.sidebar.checkbox(t["show_ug"])
     extras = st.sidebar.multiselect(
         t["extra"],
         options=list(t["extra_opts"].keys()),
@@ -314,6 +331,18 @@ def page_map(t, yards, now):
             ),
         ).add_to(fmap)
 
+    if show_ug:
+        ug = load_underground()
+        for _, r in ug.iterrows():
+            folium.CircleMarker(
+                [r["lat"], r["lon"]],
+                radius=5,
+                color="#1b5e20",
+                fill=True,
+                fill_opacity=0.8,
+                tooltip=f"{t['ug_name']}: {r['naziv']}",
+            ).add_to(fmap)
+
     if st.session_state.user_pos:
         folium.Marker(
             st.session_state.user_pos,
@@ -344,6 +373,8 @@ def page_map(t, yards, now):
         st.link_button(t["route"], route_url(lat0, lon0, best["lat"], best["lon"]))
 
     st.divider()
+    if show_ug:
+        st.caption(t["ug_note"])
     st.caption(t["containers_help"])
     st.link_button(t["containers_btn"], "https://spremnici.zagreb.hr/")
     st.caption(t["note"])
