@@ -83,6 +83,15 @@ TEXT = {
         "containers_help": "Zelene otoke i polupodzemne spremnike prikazuje karta Grada Zagreba.",
         "scan_title": "Prepoznaj otpad",
         "scan_intro": "Slikaj predmet koji želiš baciti, a mi ćemo ti reći kamo s njim.",
+        "src_txt": "Pretraži tekstom",
+        "search": "Upiši naziv predmeta (npr. baterija, pizza kutija)",
+        "search_none": "Nema rezultata. Probaj drugu riječ ili slikaj predmet.",
+        "search_pick": "Odaberi predmet",
+        "how_title": "Kako koristiti Zeleni rudnik",
+        "how_1": "**1. Slikaj ili upiši** što želiš baciti (stranica Prepoznaj otpad).",
+        "how_2": "**2. Potvrdi prijedlog** i saznaj u koji spremnik ide ili gdje ga zbrinuti.",
+        "how_3": "**3. Pronađi najbliže dvorište** na karti i pokreni rutu.",
+        "how_note": "Ovo je prototip. Prijedlozi su automatski i mogu biti pogrešni, a bodovi kvarta su simulacija.",
         "src_cam": "Snimi kamerom",
         "src_upl": "Učitaj sliku",
         "take": "Slikaj predmet",
@@ -144,6 +153,15 @@ TEXT = {
         "containers_help": "Green islands and semi-underground containers are shown on the City of Zagreb map.",
         "scan_title": "Identify waste",
         "scan_intro": "Take a photo of the item you want to throw away and we will tell you where it goes.",
+        "src_txt": "Search by text",
+        "search": "Type the item name (e.g. battery, pizza box)",
+        "search_none": "No results. Try another word or take a photo.",
+        "search_pick": "Choose an item",
+        "how_title": "How to use Zeleni rudnik",
+        "how_1": "**1. Take a photo or type** what you want to throw away (Identify waste page).",
+        "how_2": "**2. Confirm the suggestion** and see which bin it goes in or where to take it.",
+        "how_3": "**3. Find the nearest yard** on the map and start the route.",
+        "how_note": "This is a prototype. Suggestions are automatic and may be wrong, and neighbourhood points are a simulation.",
         "src_cam": "Use camera",
         "src_upl": "Upload image",
         "take": "Take a photo of the item",
@@ -429,24 +447,71 @@ def show_nearest_yard(t, yards, flag):
     st.link_button(t["route"], route_url(lat0, lon0, best["lat"], best["lon"]))
 
 
+def show_item(t, lang, item, yards):
+    name_key = "hr" if lang == "hr" else "en"
+    st.subheader(item[name_key])
+    st.markdown(f"**{t['category']}:** {item['kategorija']}")
+    st.markdown(f"**{t['where']}:** {item['gdje']}")
+    if item["napomena"]:
+        st.markdown(f"**{t['remark']}:** {item['napomena']}")
+
+    if item["krivo"]:
+        text = f"**{t['often_wrong']}**"
+        if item["greska"]:
+            text += f"  \n{t['typical_mistake']}: {item['greska']}"
+        st.warning(text, icon="⚠️")
+
+    if is_content_dependent(item["hr"]):
+        st.warning(t["sensitive"])
+        if not st.checkbox(t["confirm"], key="confirm_" + item["hr"]):
+            return
+
+    if goes_to_yard(item["gdje"]):
+        show_nearest_yard(t, yards, required_yard_flag(item["hr"]))
+
+    st.caption(t["disclaimer"])
+
+
 def page_scan(t, lang, yards):
     st.header(t["scan_title"])
     st.write(t["scan_intro"])
 
     try:
-        from PIL import Image, ImageOps
-
         items = load_items()
-        import torch  # noqa: F401
-        import transformers  # noqa: F401
     except FileNotFoundError:
         st.error(t["no_table"])
         return
+    name_key = "hr" if lang == "hr" else "en"
+
+    source = st.radio(
+        t["scan_title"],
+        [t["src_cam"], t["src_upl"], t["src_txt"]],
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+
+    # --- pretraga tekstom (ne treba model)
+    if source == t["src_txt"]:
+        q = st.text_input(t["search"]).strip().lower()
+        if not q:
+            return
+        matches = [it for it in items if q in it["hr"].lower() or q in it["en"].lower()]
+        if not matches:
+            st.info(t["search_none"])
+            return
+        item = st.selectbox(t["search_pick"], matches, format_func=lambda it: it[name_key])
+        show_item(t, lang, item, yards)
+        return
+
+    # --- fotografija
+    try:
+        from PIL import Image, ImageOps
+        import torch  # noqa: F401
+        import transformers  # noqa: F401
     except ImportError:
         st.warning(t["unavailable"])
         return
 
-    source = st.radio(t["scan_title"], [t["src_cam"], t["src_upl"]], horizontal=True, label_visibility="collapsed")
     if source == t["src_cam"]:
         file = st.camera_input(t["take"])
     else:
@@ -460,7 +525,6 @@ def page_scan(t, lang, yards):
     with st.spinner(t["analysing"]):
         top = classify(image, items)
 
-    name_key = "hr" if lang == "hr" else "en"
     best_idx, best_p = top[0]
     if best_p >= CONFIDENCE_THRESHOLD:
         st.success(f"{t['likely']}: **{items[best_idx][name_key]}** ({best_p:.0%})")
@@ -480,28 +544,7 @@ def page_scan(t, lang, yards):
         st.info(t["none_msg"])
         return
 
-    item = items[choice]
-    st.subheader(item[name_key])
-    st.markdown(f"**{t['category']}:** {item['kategorija']}")
-    st.markdown(f"**{t['where']}:** {item['gdje']}")
-    if item["napomena"]:
-        st.markdown(f"**{t['remark']}:** {item['napomena']}")
-
-    if item["krivo"]:
-        text = f"**{t['often_wrong']}**"
-        if item["greska"]:
-            text += f"  \n{t['typical_mistake']}: {item['greska']}"
-        st.warning(text, icon="⚠️")
-
-    if is_content_dependent(item["hr"]):
-        st.warning(t["sensitive"])
-        if not st.checkbox(t["confirm"]):
-            return
-
-    if goes_to_yard(item["gdje"]):
-        show_nearest_yard(t, yards, required_yard_flag(item["hr"]))
-
-    st.caption(t["disclaimer"])
+    show_item(t, lang, items[choice], yards)
 
 
 # ---------------------------------------------------------------- glavni dio
@@ -516,6 +559,12 @@ def main():
 
     st.title(t["title"])
     st.caption(t["subtitle"])
+
+    with st.expander(t["how_title"], expanded=True):
+        st.markdown(t["how_1"])
+        st.markdown(t["how_2"])
+        st.markdown(t["how_3"])
+        st.caption(t["how_note"])
 
     yards = load_yards()
     now = datetime.now(ZoneInfo("Europe/Zagreb"))
