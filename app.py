@@ -50,6 +50,7 @@ TEXT = {
         "page": "Stranica",
         "nav_map": "Karta dvorišta",
         "nav_scan": "Prepoznaj otpad",
+        "nav_kvart": "Moj kvart (bodovi)",
         "filters": "Filteri",
         "type": "Vrsta dvorišta",
         "type_opts": {"stalno": "Stalno", "mobilno": "Mobilno"},
@@ -110,6 +111,7 @@ TEXT = {
         "page": "Page",
         "nav_map": "Yard map",
         "nav_scan": "Identify waste",
+        "nav_kvart": "My neighbourhood (points)",
         "filters": "Filters",
         "type": "Yard type",
         "type_opts": {"stalno": "Permanent", "mobilno": "Mobile"},
@@ -519,12 +521,16 @@ def main():
     now = datetime.now(ZoneInfo("Europe/Zagreb"))
     yards["otvoreno"] = yards.apply(lambda r: is_open(r, now), axis=1)
 
-    page = st.sidebar.radio(t["page"], ["map", "scan"], format_func=lambda k: t["nav_map" if k == "map" else "nav_scan"])
+    page = st.sidebar.radio(t["page"], ["map", "scan", "kvart"], format_func=lambda k: t["nav_" + k])
 
     if page == "map":
         page_map(t, yards, now)
-    else:
+    elif page == "scan":
         page_scan(t, lang, yards)
+    else:
+        from kvart import page_kvart
+
+        page_kvart(lang)
 
 
 if __name__ == "__main__":
