@@ -503,6 +503,13 @@ section[data-testid="stSidebar"] > div { background: #b7c47f; }
 h1, h2, h3 { color: #2f3d12; }
 .zr-photos { display: flex; gap: 0.6rem; margin-bottom: 1rem; }
 .zr-photos img { flex: 1 1 0; min-width: 0; height: 130px; object-fit: cover; border-radius: 14px; border: 2px solid #ffffff; }
+.zr-quote {
+    font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-weight: 700;
+    font-size: 1.15rem; line-height: 1.35; text-align: center; color: #2f3d12;
+    letter-spacing: 0.04em; padding: 0.9rem 0.8rem; margin-bottom: 0.8rem;
+    background: rgba(255,255,255,0.55); border-top: 3px solid #5f7a1f; border-bottom: 3px solid #5f7a1f;
+    border-radius: 6px;
+}
 .zr-footer {
     margin-top: 2rem; padding: 1rem 1.3rem; border-radius: 16px;
     background: #5f7a1f; color: #ffffff; text-align: center; font-size: 1.05rem;
@@ -699,6 +706,10 @@ def main():
     if "user_pos" not in st.session_state:
         st.session_state.user_pos = None
 
+    st.sidebar.markdown(
+        '<div class="zr-quote">„ONO ŠTO BACAMO NIJE SMEĆE NEGO SIROVINA“</div>',
+        unsafe_allow_html=True,
+    )
     lang = st.sidebar.radio("Jezik / Language", ["hr", "en"], horizontal=True)
     t = TEXT[lang]
 
