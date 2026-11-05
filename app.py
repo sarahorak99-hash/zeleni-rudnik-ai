@@ -118,7 +118,7 @@ TEXT = {
         "disclaimer": "Prijedlog je automatski i može biti pogrešan. Ako nisi sigurna, provjeri upute na cistoca.hr.",
     },
     "en": {
-        "title": "Zeleni rudnik",
+        "title": "Green Mine (Zeleni rudnik)",
         "subtitle": "Where to take your waste in Zagreb? Find the nearest recycling yard.",
         "page": "Page",
         "nav_map": "🗺️ Yard map",
@@ -283,6 +283,8 @@ def load_items():
                     "en": str(en),
                     "kategorija": str(row[3] or ""),
                     "gdje": str(row[5] or ""),
+                    "kategorija_en": str(row[4] or row[3] or ""),
+                    "gdje_en": str(row[6] or row[5] or ""),
                     "napomena": str(row[8] or ""),
                     # stupci M i N (Često se krivo baca / Najčešća greška); stara tablica ih nema
                     "krivo": len(row) > 13 and str(row[12] or "").strip().lower() == "da",
@@ -467,7 +469,7 @@ CATEGORY_COLOURS = [
 ]
 
 
-def category_badge(name):
+def category_badge(name, label=None):
     low = name.lower()
     bg, fg = "#e8f5e9", "#1b5e20"
     for key, b, f in CATEGORY_COLOURS:
@@ -476,7 +478,7 @@ def category_badge(name):
             break
     return (
         f'<span class="zr-badge" style="background:{bg};color:{fg}">'
-        f"{html.escape(name)}</span>"
+        f"{html.escape(label or name)}</span>"
     )
 
 
@@ -602,8 +604,13 @@ def show_item(t, lang, item, yards):
     name_key = "hr" if lang == "hr" else "en"
     st.subheader(item[name_key])
     st.caption(t["encourage"])
-    st.markdown(f"**{t['category']}:** " + category_badge(item["kategorija"]), unsafe_allow_html=True)
-    st.markdown(f"**{t['where']}:** {item['gdje']}")
+    cat_label = item["kategorija"] if lang == "hr" else item["kategorija_en"]
+    where_label = item["gdje"] if lang == "hr" else item["gdje_en"]
+    st.markdown(
+        f"**{t['category']}:** " + category_badge(item["kategorija"], cat_label),
+        unsafe_allow_html=True,
+    )
+    st.markdown(f"**{t['where']}:** {where_label}")
     if item["napomena"]:
         st.markdown(f"**{t['remark']}:** {item['napomena']}")
 
@@ -706,11 +713,13 @@ def main():
     if "user_pos" not in st.session_state:
         st.session_state.user_pos = None
 
-    st.sidebar.markdown(
-        '<div class="zr-quote">„ONO ŠTO BACAMO NIJE SMEĆE NEGO SIROVINA“</div>',
-        unsafe_allow_html=True,
-    )
+    quote_box = st.sidebar.container()
     lang = st.sidebar.radio("Jezik / Language", ["hr", "en"], horizontal=True)
+    quote = {
+        "hr": "„ONO ŠTO BACAMO NIJE SMEĆE NEGO SIROVINA“",
+        "en": "“WHAT WE THROW AWAY IS NOT TRASH BUT A RESOURCE”",
+    }[lang]
+    quote_box.markdown(f'<div class="zr-quote">{quote}</div>', unsafe_allow_html=True)
     t = TEXT[lang]
 
     st.markdown(STYLE, unsafe_allow_html=True)
