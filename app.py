@@ -497,9 +497,19 @@ HERO_URI = "data:image/svg+xml;base64," + base64.b64encode(HERO_SVG.encode("utf-
 
 STYLE = """
 <style>
-h1, h2, h3 { color: #1b5e20; }
+.stApp { background: #cfd8a3; }
+header[data-testid="stHeader"] { background: transparent; }
+section[data-testid="stSidebar"] > div { background: #b7c47f; }
+h1, h2, h3 { color: #2f3d12; }
+.zr-photos { display: flex; gap: 0.6rem; margin-bottom: 1rem; }
+.zr-photos img { flex: 1 1 0; min-width: 0; height: 130px; object-fit: cover; border-radius: 14px; border: 2px solid #ffffff; }
+.zr-footer {
+    margin-top: 2rem; padding: 1rem 1.3rem; border-radius: 16px;
+    background: #5f7a1f; color: #ffffff; text-align: center; font-size: 1.05rem;
+    box-shadow: 0 2px 8px rgba(47, 61, 18, 0.25);
+}
 .zr-hero {
-    background: linear-gradient(135deg, #2e7d32 0%, #66bb6a 100%);
+    background: linear-gradient(135deg, #4f6b17 0%, #8aa43a 100%);
     color: #ffffff;
     padding: 1.2rem 1.5rem;
     border-radius: 18px;
@@ -517,7 +527,7 @@ h1, h2, h3 { color: #1b5e20; }
 }
 div[data-testid="stExpander"] {
     background: #ffffff;
-    border: 1px solid #c8e6c9;
+    border: 1px solid #aebb78;
     border-radius: 14px;
 }
 div.stButton > button, div[data-testid="stLinkButton"] a {
@@ -525,13 +535,60 @@ div.stButton > button, div[data-testid="stLinkButton"] a {
 }
 div[data-testid="stMetric"] {
     background: #ffffff;
-    border: 1px solid #c8e6c9;
+    border: 1px solid #aebb78;
     border-radius: 14px;
     padding: 0.6rem 0.9rem;
 }
 section[data-testid="stSidebar"] { border-right: 1px solid #c8e6c9; }
 </style>
 """
+
+
+PHOTO_DIR = Path(__file__).parent / "slike"
+
+
+def scene_strip():
+    """Gornji dio naslovnice: vaše fotografije iz mape slike/ ili ilustracije ako je mapa prazna."""
+    uris = []
+    if PHOTO_DIR.is_dir():
+        for f in sorted(PHOTO_DIR.iterdir())[:3]:
+            mime = {".jpg": "jpeg", ".jpeg": "jpeg", ".png": "png", ".webp": "webp"}.get(f.suffix.lower())
+            if mime:
+                uris.append(f"data:image/{mime};base64," + base64.b64encode(f.read_bytes()).decode("ascii"))
+    if not uris:
+        def tile(bg, body):
+            svg = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 130' preserveAspectRatio='xMidYMid slice'>"
+                   f"<rect width='300' height='130' fill='{bg}'/>{body}</svg>")
+            return "data:image/svg+xml;base64," + base64.b64encode(svg.encode("utf-8")).decode("ascii")
+        bins = "".join(
+            f"<rect x='{x}' y='50' width='44' height='62' rx='6' fill='{c}'/><rect x='{x - 3}' y='44' width='50' height='9' rx='3' fill='#37474f'/>"
+            for x, c in ((50, "#1976d2"), (128, "#fbc02d"), (206, "#388e3c")))
+        tree = ("<rect y='100' width='300' height='30' fill='#8bc34a'/><rect x='140' y='55' width='14' height='50' fill='#6d4c41'/>"
+                "<circle cx='147' cy='45' r='34' fill='#2e7d32'/><circle cx='120' cy='65' r='22' fill='#388e3c'/><circle cx='175' cy='65' r='22' fill='#388e3c'/>")
+        flowers = "<rect y='95' width='300' height='35' fill='#8bc34a'/>" + "".join(
+            f"<line x1='{x}' y1='115' x2='{x}' y2='80' stroke='#2e7d32' stroke-width='4'/><circle cx='{x}' cy='72' r='11' fill='{c}'/><circle cx='{x}' cy='72' r='4' fill='#f9a825'/>"
+            for x, c in ((50, "#f48fb1"), (105, "#fff176"), (160, "#ce93d8"), (215, "#f48fb1"), (265, "#fff176")))
+        uris = [tile("#e3f2fd", bins), tile("#e3f2fd", tree), tile("#fff9c4", flowers)]
+    imgs = "".join(f'<img src="{u}" alt="">' for u in uris)
+    st.markdown(f'<div class="zr-photos">{imgs}</div>', unsafe_allow_html=True)
+
+
+FOOTER = {
+    "hr": [
+        "♻️ Svaki razvrstani predmet je jedan manje na odlagalištu. Hvala ti što si dio promjene!",
+        "🌱 Otpad nije smeće dok ga ne pomiješamo. Razvrstaj ga i daj mu novi život!",
+        "🌍 Mali koraci svakog građana zajedno čine čist i zelen Zagreb.",
+    ],
+    "en": [
+        "♻️ Every item you sort is one less in the landfill. Thank you for being part of the change!",
+        "🌱 Waste only becomes trash when we mix it. Sort it and give it a new life!",
+        "🌍 Small steps from every citizen together make a clean and green Zagreb.",
+    ],
+}
+
+
+def show_footer(lang, idx):
+    st.markdown(f'<div class="zr-footer">{html.escape(FOOTER[lang][idx])}</div>', unsafe_allow_html=True)
 
 
 def show_item(t, lang, item, yards):
@@ -647,12 +704,14 @@ def main():
 
     st.markdown(STYLE, unsafe_allow_html=True)
     st.markdown(
-        f'<div class="zr-hero" style="background-image:url({HERO_URI}),linear-gradient(135deg,#2e7d32,#66bb6a);'
+        f'<div class="zr-hero" style="background-image:url({HERO_URI}),linear-gradient(135deg,#4f6b17,#8aa43a);'
         f'background-repeat:no-repeat,no-repeat;background-position:right 1rem center,center;'
         f'background-size:auto 95%,cover"><h1>♻️ {html.escape(t["title"])}</h1>'
         f'<p>{html.escape(t["subtitle"])}</p></div>',
         unsafe_allow_html=True,
     )
+
+    scene_strip()
 
     with st.expander(t["how_title"], expanded=True):
         st.markdown(t["how_1"])
@@ -668,12 +727,15 @@ def main():
 
     if page == "map":
         page_map(t, yards, now)
+        show_footer(lang, 0)
     elif page == "scan":
         page_scan(t, lang, yards)
+        show_footer(lang, 1)
     else:
         from kvart import page_kvart
 
         page_kvart(lang)
+        show_footer(lang, 2)
 
 
 if __name__ == "__main__":
