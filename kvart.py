@@ -4,6 +4,7 @@ Bodovi su demo vrijednosti: nemamo stvarne podatke o odlaganju po kvartovima.
 Prikaz služi kao prototip mehanike: građani skupljaju bodove za svoju četvrt,
 a bodovi otključavaju zajedničke projekte (cvijeće, grm, stablo, klupica...).
 """
+import base64
 import json
 import random
 from pathlib import Path
@@ -64,6 +65,7 @@ TEXT = {
         "col_p": "Bodovi",
         "col_n": "Ostvareni ciljevi",
         "fair": "Napomena: u stvarnoj verziji bodove treba računati po broju stanovnika kako velike četvrti ne bi automatski pobjeđivale, a odlaganje potvrđivati (npr. QR kod na dvorištu). Pragovi za projekte su ilustrativni.",
+        "scene_cap": "Tako trenutno izgleda tvoj kvart u simulaciji. Svaki cilj dodaje nešto novo.",
         "nofile": "Nije pronađena datoteka s granicama četvrti (gradske_cetvrti.geojson).",
     },
     "en": {
@@ -92,6 +94,7 @@ TEXT = {
         "col_p": "Points",
         "col_n": "Goals achieved",
         "fair": "Note: in a real version points should be calculated per resident so large districts don't win automatically, and disposal should be verified (e.g. a QR code at the yard). Project thresholds are illustrative.",
+        "scene_cap": "This is how your neighbourhood looks in the simulation. Every goal adds something new.",
         "nofile": "District boundary file (gradske_cetvrti.geojson) not found.",
     },
 }
@@ -122,6 +125,60 @@ def colour(value, lo, hi):
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
+def scene_svg(points):
+    """Izmišljena ilustracija kvarta: elementi se pojavljuju kako se otključavaju ciljevi."""
+    p = []
+    p.append("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 220'>")
+    p.append("<rect width='600' height='220' fill='#e3f2fd'/>")
+    p.append("<circle cx='540' cy='42' r='22' fill='#ffd54f'/>")
+    p.append("<rect y='150' width='600' height='70' fill='#8bc34a'/>")
+    p.append("<rect y='150' width='600' height='6' fill='#7cb342'/>")
+    # kuće (kvart)
+    for x, c in ((14, "#ffcc80"), (62, "#ef9a9a"), (110, "#b0bec5")):
+        p.append(f"<rect x='{x}' y='112' width='38' height='38' fill='{c}'/>")
+        p.append(f"<polygon points='{x - 4},112 {x + 19},92 {x + 42},112' fill='#8d6e63'/>")
+        p.append(f"<rect x='{x + 14}' y='128' width='10' height='22' fill='#6d4c41'/>")
+    if points >= 1500:  # cvijeće
+        for x, c in ((170, "#f48fb1"), (192, "#fff176"), (214, "#ce93d8"), (236, "#f48fb1")):
+            p.append(f"<line x1='{x}' y1='186' x2='{x}' y2='166' stroke='#2e7d32' stroke-width='3'/>")
+            p.append(f"<circle cx='{x}' cy='162' r='7' fill='{c}'/>")
+            p.append(f"<circle cx='{x}' cy='162' r='2.5' fill='#f9a825'/>")
+    if points >= 3000:  # grmlje
+        for x in (280, 312):
+            p.append(f"<ellipse cx='{x}' cy='178' rx='26' ry='17' fill='#43a047'/>")
+            p.append(f"<ellipse cx='{x - 8}' cy='172' rx='14' ry='10' fill='#66bb6a'/>")
+    if points >= 6000:  # stablo
+        p.append("<rect x='362' y='116' width='14' height='64' fill='#6d4c41'/>")
+        p.append("<circle cx='369' cy='100' r='34' fill='#2e7d32'/>")
+        p.append("<circle cx='346' cy='120' r='22' fill='#388e3c'/>")
+        p.append("<circle cx='392' cy='120' r='22' fill='#388e3c'/>")
+    if points >= 10000:  # klupica
+        p.append("<rect x='420' y='160' width='70' height='7' fill='#8d6e63'/>")
+        p.append("<rect x='420' y='146' width='70' height='6' fill='#8d6e63'/>")
+        p.append("<rect x='426' y='167' width='6' height='20' fill='#5d4037'/>")
+        p.append("<rect x='478' y='167' width='6' height='20' fill='#5d4037'/>")
+        p.append("<rect x='426' y='152' width='6' height='15' fill='#5d4037'/>")
+        p.append("<rect x='478' y='152' width='6' height='15' fill='#5d4037'/>")
+    if points >= 20000:  # mini park
+        p.append("<ellipse cx='300' cy='205' rx='170' ry='9' fill='#d7ccc8'/>")
+        p.append("<rect x='528' y='122' width='12' height='58' fill='#6d4c41'/>")
+        p.append("<circle cx='534' cy='108' r='28' fill='#2e7d32'/>")
+        p.append("<circle cx='516' cy='124' r='18' fill='#388e3c'/>")
+        p.append("<circle cx='552' cy='124' r='18' fill='#388e3c'/>")
+    p.append("</svg>")
+    return "".join(p)
+
+
+def show_scene(points, caption):
+    b64 = base64.b64encode(scene_svg(points).encode("utf-8")).decode("ascii")
+    st.markdown(
+        f'<img src="data:image/svg+xml;base64,{b64}" style="width:100%;border-radius:16px;'
+        f'border:1px solid #c8e6c9" alt="Kvart">',
+        unsafe_allow_html=True,
+    )
+    st.caption(caption)
+
+
 def page_kvart(lang):
     t = TEXT[lang]
     i = 0 if lang == "hr" else 1
@@ -145,6 +202,8 @@ def page_kvart(lang):
     c1, c2 = st.columns(2)
     c1.metric(mine, f"{pts[mine]:,} {t['pts']}".replace(",", "."))
     c2.metric(t["rank"], f"{rank}. {t['of']} {len(names)}")
+
+    show_scene(pts[mine], t["scene_cap"])
 
     if "kvart_msg" in st.session_state:
         st.success(st.session_state.pop("kvart_msg"))

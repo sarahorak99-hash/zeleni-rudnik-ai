@@ -11,6 +11,8 @@ Mapa mora sadržavati:
 Za prepoznavanje trebaju još: torch, transformers, pillow, openpyxl.
 Ako ih nema, stranica karte i dalje radi.
 """
+import base64
+import html
 from datetime import datetime
 from math import asin, cos, radians, sin, sqrt
 from zoneinfo import ZoneInfo
@@ -48,9 +50,9 @@ TEXT = {
         "title": "Zeleni rudnik",
         "subtitle": "Kamo s otpadom u Zagrebu? Pronađi najbliže reciklažno dvorište.",
         "page": "Stranica",
-        "nav_map": "Karta dvorišta",
-        "nav_scan": "Prepoznaj otpad",
-        "nav_kvart": "Moj kvart (bodovi)",
+        "nav_map": "🗺️ Karta dvorišta",
+        "nav_scan": "📷 Prepoznaj otpad",
+        "nav_kvart": "🏘️ Moj kvart (bodovi)",
         "filters": "Filteri",
         "type": "Vrsta dvorišta",
         "type_opts": {"stalno": "Stalno", "mobilno": "Mobilno"},
@@ -87,6 +89,7 @@ TEXT = {
         "search": "Upiši naziv predmeta (npr. baterija, pizza kutija)",
         "search_none": "Nema rezultata. Probaj drugu riječ ili slikaj predmet.",
         "search_pick": "Odaberi predmet",
+        "encourage": "🌱 Hvala što pravilno odlažeš otpad. Svaki predmet je važan!",
         "how_title": "Kako koristiti Zeleni rudnik",
         "how_1": "**1. Slikaj ili upiši** što želiš baciti (stranica Prepoznaj otpad).",
         "how_2": "**2. Potvrdi prijedlog** i saznaj u koji spremnik ide ili gdje ga zbrinuti.",
@@ -118,9 +121,9 @@ TEXT = {
         "title": "Zeleni rudnik",
         "subtitle": "Where to take your waste in Zagreb? Find the nearest recycling yard.",
         "page": "Page",
-        "nav_map": "Yard map",
-        "nav_scan": "Identify waste",
-        "nav_kvart": "My neighbourhood (points)",
+        "nav_map": "🗺️ Yard map",
+        "nav_scan": "📷 Identify waste",
+        "nav_kvart": "🏘️ My neighbourhood (points)",
         "filters": "Filters",
         "type": "Yard type",
         "type_opts": {"stalno": "Permanent", "mobilno": "Mobile"},
@@ -157,6 +160,7 @@ TEXT = {
         "search": "Type the item name (e.g. battery, pizza box)",
         "search_none": "No results. Try another word or take a photo.",
         "search_pick": "Choose an item",
+        "encourage": "🌱 Thank you for sorting your waste properly. Every item counts!",
         "how_title": "How to use Zeleni rudnik",
         "how_1": "**1. Take a photo or type** what you want to throw away (Identify waste page).",
         "how_2": "**2. Confirm the suggestion** and see which bin it goes in or where to take it.",
@@ -447,10 +451,94 @@ def show_nearest_yard(t, yards, flag):
     st.link_button(t["route"], route_url(lat0, lon0, best["lat"], best["lon"]))
 
 
+CATEGORY_COLOURS = [
+    ("opasn", "#fee2e2", "#991b1b"),
+    ("baterij", "#fee2e2", "#991b1b"),
+    ("elektr", "#ede9fe", "#5b21b6"),
+    ("plastik", "#fef3c7", "#7a5b00"),
+    ("papir", "#dbeafe", "#1e40af"),
+    ("staklo", "#d1fae5", "#065f46"),
+    ("bio", "#efe4d3", "#5b3a1a"),
+    ("zeleni", "#dcfce7", "#166534"),
+    ("tekstil", "#fce7f3", "#9d174d"),
+    ("glomaz", "#ffedd5", "#9a3412"),
+    ("miješani", "#e5e7eb", "#374151"),
+    ("metal", "#e0e7ff", "#3730a3"),
+]
+
+
+def category_badge(name):
+    low = name.lower()
+    bg, fg = "#e8f5e9", "#1b5e20"
+    for key, b, f in CATEGORY_COLOURS:
+        if key in low:
+            bg, fg = b, f
+            break
+    return (
+        f'<span class="zr-badge" style="background:{bg};color:{fg}">'
+        f"{html.escape(name)}</span>"
+    )
+
+
+HERO_SVG = (
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 200'>"
+    "<g fill='#ffffff' fill-opacity='0.22'>"
+    "<path d='M60 190 C20 140 40 70 120 40 C140 110 120 160 60 190Z'/>"
+    "<path d='M140 190 C110 130 150 60 240 30 C250 110 210 170 140 190Z'/>"
+    "<path d='M215 195 C200 160 220 120 270 100 C285 150 260 185 215 195Z'/>"
+    "</g>"
+    "<g stroke='#ffffff' stroke-opacity='0.35' stroke-width='3' fill='none'>"
+    "<path d='M60 190 C75 140 95 90 120 40'/>"
+    "<path d='M140 190 C170 130 200 80 240 30'/>"
+    "</g></svg>"
+)
+HERO_URI = "data:image/svg+xml;base64," + base64.b64encode(HERO_SVG.encode("utf-8")).decode("ascii")
+
+
+STYLE = """
+<style>
+h1, h2, h3 { color: #1b5e20; }
+.zr-hero {
+    background: linear-gradient(135deg, #2e7d32 0%, #66bb6a 100%);
+    color: #ffffff;
+    padding: 1.2rem 1.5rem;
+    border-radius: 18px;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(46, 125, 50, 0.25);
+}
+.zr-hero h1 { color: #ffffff; margin: 0; font-size: 2.1rem; padding: 0; }
+.zr-hero p { margin: 0.3rem 0 0 0; font-size: 1.05rem; opacity: 0.95; }
+.zr-badge {
+    display: inline-block;
+    padding: 0.2rem 0.8rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+div[data-testid="stExpander"] {
+    background: #ffffff;
+    border: 1px solid #c8e6c9;
+    border-radius: 14px;
+}
+div.stButton > button, div[data-testid="stLinkButton"] a {
+    border-radius: 12px;
+}
+div[data-testid="stMetric"] {
+    background: #ffffff;
+    border: 1px solid #c8e6c9;
+    border-radius: 14px;
+    padding: 0.6rem 0.9rem;
+}
+section[data-testid="stSidebar"] { border-right: 1px solid #c8e6c9; }
+</style>
+"""
+
+
 def show_item(t, lang, item, yards):
     name_key = "hr" if lang == "hr" else "en"
     st.subheader(item[name_key])
-    st.markdown(f"**{t['category']}:** {item['kategorija']}")
+    st.caption(t["encourage"])
+    st.markdown(f"**{t['category']}:** " + category_badge(item["kategorija"]), unsafe_allow_html=True)
     st.markdown(f"**{t['where']}:** {item['gdje']}")
     if item["napomena"]:
         st.markdown(f"**{t['remark']}:** {item['napomena']}")
@@ -557,8 +645,14 @@ def main():
     lang = st.sidebar.radio("Jezik / Language", ["hr", "en"], horizontal=True)
     t = TEXT[lang]
 
-    st.title(t["title"])
-    st.caption(t["subtitle"])
+    st.markdown(STYLE, unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="zr-hero" style="background-image:url({HERO_URI}),linear-gradient(135deg,#2e7d32,#66bb6a);'
+        f'background-repeat:no-repeat,no-repeat;background-position:right 1rem center,center;'
+        f'background-size:auto 95%,cover"><h1>♻️ {html.escape(t["title"])}</h1>'
+        f'<p>{html.escape(t["subtitle"])}</p></div>',
+        unsafe_allow_html=True,
+    )
 
     with st.expander(t["how_title"], expanded=True):
         st.markdown(t["how_1"])
