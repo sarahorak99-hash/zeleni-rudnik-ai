@@ -503,6 +503,11 @@ STYLE = """
 header[data-testid="stHeader"] { background: transparent; }
 section[data-testid="stSidebar"] > div { background: #b7c47f; }
 h1, h2, h3 { color: #2f3d12; }
+html, body, .stApp, .stApp p, .stApp li, .stApp label, .stApp span { color: #1f2a0c; }
+div[data-testid="stCaptionContainer"], div[data-testid="stCaptionContainer"] p, .stApp small { color: #2f3d12 !important; opacity: 1 !important; }
+div[data-testid="stMetricLabel"], div[data-testid="stMetricLabel"] p { color: #2f3d12 !important; opacity: 1 !important; }
+.zr-hero, .zr-hero h1, .zr-hero p, .zr-footer, .zr-footer p { color: #ffffff !important; }
+.zr-badge { color: inherit; }
 .zr-photos { display: flex; gap: 0.6rem; margin-bottom: 1rem; }
 .zr-photos img { flex: 1 1 0; min-width: 0; height: 130px; object-fit: cover; border-radius: 14px; border: 2px solid #ffffff; }
 .zr-quote {
