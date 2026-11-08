@@ -499,7 +499,11 @@ HERO_URI = "data:image/svg+xml;base64," + base64.b64encode(HERO_SVG.encode("utf-
 
 STYLE = """
 <style>
+:root, .stApp { color-scheme: light; }
 .stApp { background: #cfd8a3; }
+div.block-container { padding-top: 4rem; }
+div[data-testid="stAlert"] { background: #fff8e1 !important; border: 1px solid #e0c36a; border-radius: 14px; }
+div[data-testid="stAlert"] * { color: #3b2f00 !important; opacity: 1 !important; }
 header[data-testid="stHeader"] { background: transparent; }
 section[data-testid="stSidebar"] > div { background: #b7c47f; }
 h1, h2, h3 { color: #2f3d12; }
